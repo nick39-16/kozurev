@@ -1,200 +1,263 @@
-# Movie Library — пошаговая инструкция по созданию приложения
+# Пошаговая инструкция по созданию GUI-приложения «Random Task Generator»
 
-## 1. Структура проекта
+Ниже представлена подробная инструкция для реализации приложения «Генератор случайных задач» на Python с использованием библиотеки `tkinter` для GUI, `random` для случайного выбора, `json` для сохранения истории и Git для контроля версий.
 
-Создайте папку `movie_library` и добавьте в неё:
-- файл `main.py` — основной код приложения;
-- файл `movies.json` — для хранения данных о фильмах;
-- файл `.gitignore` — чтобы не отслеживать временные файлы;
-- файл `README.md` — описание проекта.
+---
 
-## 2. Основной код (`main.py`)
+## 1. Подготовка окружения
+
+1. Установите Python (если не установлен).
+2. Создайте папку проекта, например, `random_task_generator`.
+3. Откройте терминал в этой папке и инициализируйте Git-репозиторий:
+   ```bash
+   git init
+   ```
+
+---
+
+## 2. Структура проекта
+
+```
+random_task_generator/
+│
+├── tasks.json        # Файл для хранения истории
+├── main.py           # Основной код приложения
+├── README.md         # Описание проекта
+└── .gitignore        # Игнорируемые файлы (например, __pycache__)
+```
+
+---
+
+## 3. Создание списка задач
+
+В начале `main.py` определите словарь задач с типами:
 
 ```python
 import tkinter as tk
-from tkinter import ttk, messagebox
+import random
 import json
 
-MOVIES_FILE = 'movies.json'
-
-def load_movies():
-    try:
-        with open(MOVIES_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return []
-
-def save_movies(data):
-    with open(MOVIES_FILE, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
-def validate_input():
-    title = entry_title.get().strip()
-    genre = entry_genre.get().strip()
-    year = entry_year.get().strip()
-    rating = entry_rating.get().strip()
-
-    if not title or not genre:
-        messagebox.showerror("Ошибка", "Название и жанр не должны быть пустыми.")
-        return False
-
-    if not year.isdigit() or not (1800 <= int(year) <= 2100):
-        messagebox.showerror("Ошибка", "Год должен быть числом от 1800 до 2100.")
-        return False
-
-    if not (rating.replace('.', '', 1).isdigit() and 0 <= float(rating) <= 10):
-        messagebox.showerror("Ошибка", "Рейтинг должен быть числом от 0 до 10.")
-        return False
-
-    return True
-
-def add_movie():
-    if validate_input():
-        movie = {
-            "title": entry_title.get(),
-            "genre": entry_genre.get(),
-            "year": int(entry_year.get()),
-            "rating": float(entry_rating.get())
-        }
-        movies.append(movie)
-        save_movies(movies)
-        refresh_table()
-        clear_fields()
-
-def refresh_table(filter_genre=None, filter_year=None):
-    for item in tree.get_children():
-        tree.delete(item)
-    for movie in movies:
-        if filter_genre and movie["genre"].lower() != filter_genre.lower():
-            continue
-        if filter_year and movie["year"] != int(filter_year):
-            continue
-        tree.insert("", "end", values=(movie["title"], movie["genre"], movie["year"], movie["rating"]))
-
-def apply_filters():
-    genre = entry_filter_genre.get().strip() if entry_filter_genre.get().strip() else None
-    year = entry_filter_year.get().strip() if entry_filter_year.get().strip() else None
-    refresh_table(genre, year)
-
-def clear_fields():
-    entry_title.delete(0, tk.END)
-    entry_genre.delete(0, tk.END)
-    entry_year.delete(0, tk.END)
-    entry_rating.delete(0, tk.END)
-
-movies = load_movies()
-
-root = tk.Tk()
-root.title("Movie Library")
-root.geometry("800x500")
-
-tab_control = ttk.Notebook(root)
-tab_main = ttk.Frame(tab_control)
-tab_filter = ttk.Frame(tab_control)
-tab_control.add(tab_main, text="Добавить фильм")
-tab_control.add(tab_filter, text="Фильтр")
-tab_control.pack(expand=1, fill="both")
-
-# Вкладка "Добавить фильм"
-tk.Label(tab_main, text="Название:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
-entry_title = tk.Entry(tab_main, width=40)
-entry_title.grid(row=0, column=1, padx=5, pady=5)
-
-tk.Label(tab_main, text="Жанр:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
-entry_genre = tk.Entry(tab_main, width=40)
-entry_genre.grid(row=1, column=1, padx=5, pady=5)
-
-tk.Label(tab_main, text="Год выпуска:").grid(row=2, column=0, padx=5, pady=5, sticky="w")
-entry_year = tk.Entry(tab_main, width=40)
-entry_year.grid(row=2, column=1, padx=5, pady=5)
-
-tk.Label(tab_main, text="Рейтинг (0-10):").grid(row=3, column=0, padx=5, pady=5, sticky="w")
-entry_rating = tk.Entry(tab_main, width=40)
-entry_rating.grid(row=3, column=1, padx=5, pady=5)
-
-btn_add = ttk.Button(tab_main, text="Добавить фильм", command=add_movie)
-btn_add.grid(row=4, column=0, columnspan=2, pady=10)
-
-tree = ttk.Treeview(tab_main, columns=("Название", "Жанр", "Год", "Рейтинг"), show="headings")
-for col in ("Название", "Жанр", "Год", "Рейтинг"):
-    tree.heading(col, text=col)
-tree.grid(row=5, column=0, columnspan=2, padx=5, pady=5, sticky="nsew")
-scrollbar = ttk.Scrollbar(tab_main, orient="vertical", command=tree.yview)
-scrollbar.grid(row=5, column=2, sticky="ns")
-tree.configure(yscrollcommand=scrollbar.set)
-
-# Вкладка "Фильтр"
-tk.Label(tab_filter, text="Жанр:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
-entry_filter_genre = tk.Entry(tab_filter)
-entry_filter_genre.grid(row=0, column=1, padx=5, pady=5)
-
-tk.Label(tab_filter, text="Год выпуска:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
-entry_filter_year = tk.Entry(tab_filter)
-entry_filter_year.grid(row=1, column=1, padx=5, pady=5)
-
-btn_apply = ttk.Button(tab_filter, text="Применить фильтр", command=apply_filters)
-btn_apply.grid(row=2, column=0, columnspan=2, pady=10)
-
-refresh_table()
-root.mainloop()
+TASKS = {
+    "учёба": ["Прочитать статью", "Решить задачу", "Посмотреть лекцию"],
+    "спорт": ["Сделать зарядку", "Пробежаться", "Отжаться 20 раз"],
+    "работа": ["Написать отчёт", "Провести созвон", "Подготовить презентацию"]
+}
 ```
 
-## 3. Файл `.gitignore`
+---
 
-```
-__pycache__/
-*.pyc
-*.log
-*.swp
-*.bak
-```
-*(Если хотите хранить данные в Git — уберите `movies.json` из .gitignore)*
+## 4. Реализация GUI и логики
 
-## 4. README.md (пример оформления)
+### Основной класс приложения
 
-```
-# Movie Library
+```python
+class TaskGeneratorApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Random Task Generator")
+        self.history = self.load_history()
 
-**Автор:** Иван Иванов
+        # Виджеты
+        self.task_label = tk.Label(root, text="Ваша задача:", font=("Arial", 14))
+        self.task_label.pack(pady=10)
 
-## Описание программы
+        self.task_display = tk.Label(root, text="", font=("Arial", 16), wraplength=300)
+        self.task_display.pack(pady=10)
 
-Movie Library — приложение для хранения и фильтрации личной коллекции фильмов с графическим интерфейсом. Позволяет добавлять фильмы с указанием названия, жанра, года выпуска и рейтинга (от 0 до 10), а также фильтровать записи по жанру и году. Все данные сохраняются в формате JSON.
+        self.generate_btn = tk.Button(root, text="Сгенерировать задачу", command=self.generate_task)
+        self.generate_btn.pack(pady=5)
 
-## Как использовать
+        self.filter_var = tk.StringVar(value="все")
+        filter_frame = tk.Frame(root)
+        filter_frame.pack(pady=5)
+        for t in ["все"] + list(TASKS.keys()):
+            tk.Radiobutton(filter_frame, text=t, variable=self.filter_var, value=t).pack(side=tk.LEFT)
 
-1. Установите Python 3.x.
-2. Скопируйте файлы проекта в одну папку.
-3. Запустите main.py.
-4. Введите данные о фильме и нажмите «Добавить фильм».
-5. Для фильтрации используйте вкладку «Фильтр».
-6. Данные сохраняются автоматически.
+        self.history_listbox = tk.Listbox(root, width=50, height=10)
+        self.history_listbox.pack(pady=10)
 
-## Примеры использования
+        self.update_history_display()
 
-- Добавить фильм: «Начало», «Фантастика», 2010, 8.8.
-- Отфильтровать фильмы по жанру «Комедия».
-- Показать все фильмы за 2023 год.
-```
+    def generate_task(self):
+        task_type = self.filter_var.get()
+        if task_type == "все":
+            all_tasks = [t for sublist in TASKS.values() for t in sublist]
+            task = random.# Пошаговая инструкция по созданию GUI-приложения «Random Task Generator»
 
-## 4. Использование Git
+Ниже представлена подробная инструкция для реализации приложения «Генератор случайных задач» на Python с использованием библиотеки `tkinter` для GUI, `random` для случайного выбора, `json` для сохранения истории и Git для контроля версий.
 
-1. Откройте терминал в папке проекта.
-2. Инициализируйте репозиторий:
-   ```
+---
+
+## 1. Подготовка окружения
+
+1. Установите Python (если не установлен).
+2. Создайте папку проекта, например, `random_task_generator`.
+3. Откройте терминал в этой папке и инициализируйте Git-репозиторий:
+   ```bash
    git init
    ```
-3. Добавьте файлы:
-   ```
+
+---
+
+## 2. Структура проекта
+
+```
+random_task_generator/
+│
+├── tasks.json        # Файл для хранения истории
+├── main.py           # Основной код приложения
+├── README.md         # Описание проекта
+└── .gitignore        # Игнорируемые файлы (например, __pycache__)
+```
+
+---
+
+## 3. Создание списка задач
+
+В начале `main.py` определите словарь задач с типами:
+
+```python
+import tkinter as tk
+import random
+import json
+
+TASKS = {
+    "учёба": ["Прочитать статью", "Решить задачу", "Посмотреть лекцию"],
+    "спорт": ["Сделать зарядку", "Пробежаться", "Отжаться 20 раз"],
+    "работа": ["Написать отчёт", "Провести созвон", "Подготовить презентацию"]
+}
+```
+
+---
+
+## 4. Реализация GUI и логики
+
+### Основной класс приложения
+
+```python
+class TaskGeneratorApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Random Task Generator")
+        self.history = self.load_history()
+
+        # Виджеты
+        self.task_label = tk.Label(root, text="Ваша задача:", font=("Arial", 14))
+        self.task_label.pack(pady=10)
+
+        self.task_display = tk.Label(root, text="", font=("Arial", 16), wraplength=300)
+        self.task_display.pack(pady=10)
+
+        self.generate_btn = tk.Button(root, text="Сгенерировать задачу", command=self.generate_task)
+        self.generate_btn.pack(pady=5)
+
+        self.filter_var = tk.StringVar(value="все")
+        filter_frame = tk.Frame(root)
+        filter_frame.pack(pady=5)
+        for t in ["все"] + list(TASKS.keys()):
+            tk.Radiobutton(filter_frame, text=t, variable=self.filter_var, value=t).pack(side=tk.LEFT)
+
+        self.history_listbox = tk.Listbox(root, width=50, height=10)
+        self.history_listbox.pack(pady=10)
+
+        self.update_history_display()
+
+    def generate_task(self):
+        task_type = self.filter_var.get()
+        if task_type == "все":
+            all_tasks = [t for sublist in TASKS.values() for t in sublist]
+            task = random.choice(all_tasks)
+        else:
+            task = random.choice(TASKS[task_type])
+        
+        self.task_display.config(text=task)
+        self.history.append(task)
+        self.save_history()
+        self.update_history_display()
+
+    def update_history_display(self):
+        self.history_listbox.delete(0, tk.END)
+        for task in self.history:
+            self.history_listbox.insert(tk.END, task)
+
+    def save_history(self):
+        with open("tasks.json", "w", encoding="utf-8") as f:
+            json.dump(self.history, f, ensure_ascii=False, indent=2)
+
+    def load_history(self):
+        try:
+            with open("tasks.json", "r", encoding="utf-8") as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return []
+```
+
+### Запуск приложения
+
+```python
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = TaskGeneratorApp(root)
+    root.mainloop()
+```
+
+---
+
+## 5. Проверка корректности ввода
+
+Если вы добавите возможность вводить свои задачи (например, через Entry и кнопку «Добавить»), реализуйте проверку:
+```python
+def add_custom_task(self):
+    task = self.entry.get().strip()
+    if not task:
+        messagebox.showwarning("Ошибка", "Задача не может быть пустой!")
+        return
+    # Добавление в список и историю...
+```
+
+---
+
+## 6. Использование Git
+
+1. Добавьте файлы в репозиторий:
+   ```bash
    git add .
+   git commit -m "Initial commit: Random Task Generator"
    ```
-4. Сделайте первый коммит:
+2. Создайте репозиторий на GitHub/GitLab и залейте проект:
+   ```bash
+   git remote add origin <ваш_репозиторий>
+   git push -u origin master
    ```
-   git commit -m "Initial commit"
-   ```
-5. (Опционально) Создайте репозиторий на GitHub/GitLab и залейте проект.
+
+---
+
+## 7. Пример README.md
+
 ```
-git remote add origin <ваш_репозиторий>
-git push -u origin master
+# Random Task Generator
+
+**Автор:** Иванов Иван
+
+**Описание:**
+Простое GUI-приложение для генерации случайных задач по категориям (учёба, спорт, работа). История сохраняется в JSON, есть фильтрация по типу задач.
+
+**Использование:**
+1. Запустите main.py.
+2. Нажмите «Сгенерировать задачу».
+3. Используйте радиокнопки для фильтрации.
+4. История сохраняется автоматически.
 ```
-```
+
+---
+
+## 8. Возможные тесты
+
+- Генерация задачи при разных фильтрах.
+- Проверка сохранения и загрузки истории.
+- Попытка добавить пустую задачу (если реализовано).
+- Проверка корректности отображения истории.
+
+---
+
+🚀 **Проект готов!** Теперь у вас есть рабочее приложение с историей, фильтрацией, сохранением данных и контролем версий.
